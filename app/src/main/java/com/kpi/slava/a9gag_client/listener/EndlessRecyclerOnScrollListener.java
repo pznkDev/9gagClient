@@ -41,6 +41,7 @@ public abstract class EndlessRecyclerOnScrollListener extends RecyclerView.OnScr
             onLoadMore(current_page);
             loading = true;
         }
+
     }
 
     public void refresh(){

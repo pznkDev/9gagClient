@@ -8,11 +8,13 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.View;
 import android.widget.Toast;
 
 import com.facebook.CallbackManager;
@@ -84,6 +86,8 @@ public class MainActivity extends AppCompatActivity {
     //fragmentManager for VKapi
     private FragmentManager fragmentManager;
 
+    private FloatingActionButton fab;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,9 +98,9 @@ public class MainActivity extends AppCompatActivity {
 
         fragmentManager = getSupportFragmentManager();
 
-        recyclerView = (RecyclerView) findViewById(R.id.recycer_view_main);
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view_main);
 
-        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        final LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         recyclerView.setLayoutManager(layoutManager);
 
         recyclerOnScrollListener = new EndlessRecyclerOnScrollListener(layoutManager) {
@@ -149,6 +153,14 @@ public class MainActivity extends AppCompatActivity {
                 recyclerOnScrollListener.refresh();
                 loadImages(1);
                 swipeRefresh.setRefreshing(false);
+            }
+        });
+
+        fab = (FloatingActionButton) findViewById(R.id.fab_up);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                layoutManager.scrollToPositionWithOffset(0, 0);
             }
         });
 
