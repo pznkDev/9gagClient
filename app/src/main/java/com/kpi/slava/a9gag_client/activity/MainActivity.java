@@ -33,6 +33,7 @@ import com.kpi.slava.a9gag_client.api.BaseResponse;
 import com.kpi.slava.a9gag_client.api.Image;
 import com.kpi.slava.a9gag_client.api.Link;
 import com.kpi.slava.a9gag_client.listener.EndlessRecyclerOnScrollListener;
+import com.kpi.slava.a9gag_client.other.PreferenceManagerUtils;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
@@ -94,7 +95,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         facebookInitializer();
-        vkInitializer();
 
         fragmentManager = getSupportFragmentManager();
 
@@ -117,16 +117,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(String shareType, Bitmap bitmap) {
 
-                switch (shareType){
-                    case (ImageRVAdapter.SHAREVK) :
+                switch (shareType) {
+                    case (ImageRVAdapter.SHAREVK):
                         shareImageVK(bitmap);
                         break;
 
-                    case (ImageRVAdapter.SHAREINSTAGRAM) :
+                    case (ImageRVAdapter.SHAREINSTAGRAM):
                         shareImageInstagram(bitmap);
                         break;
 
-                    case (ImageRVAdapter.SHAREFACEBOOK) :
+                    case (ImageRVAdapter.SHAREFACEBOOK):
                         shareImageFacebook(bitmap);
                         break;
 
@@ -171,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
         FacebookSdk.sdkInitialize(getApplicationContext());
     }
 
-    private void vkInitializer(){
+    private void vkInitializer() {
         VKSdk.login(this, VKScope.WALL, VKScope.PHOTOS, VKScope.OFFLINE);
     }
 
@@ -198,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<BaseResponse> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "Ooops, something went wrong", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Network connection error", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -234,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(context, "Successfully saved", Toast.LENGTH_SHORT).show();
 
         } catch (Exception e) {
-            Toast.makeText(context, "wrong", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "error", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
     }
@@ -246,13 +246,18 @@ public class MainActivity extends AppCompatActivity {
 
         shareDialog.registerCallback(callbackManager, new FacebookCallback<Sharer.Result>() {
             @Override
-            public void onSuccess(Sharer.Result result) { Toast.makeText(MainActivity.this, "Successfully posted in Fb", Toast.LENGTH_SHORT).show();}
+            public void onSuccess(Sharer.Result result) {
+                Toast.makeText(MainActivity.this, "Successfully posted in Fb", Toast.LENGTH_SHORT).show();
+            }
 
             @Override
-            public void onCancel() {}
+            public void onCancel() {
+            }
 
             @Override
-            public void onError(FacebookException error) {Toast.makeText(MainActivity.this, "An error occurred Fb", Toast.LENGTH_SHORT).show();}
+            public void onError(FacebookException error) {
+                Toast.makeText(MainActivity.this, "An error occurred Fb", Toast.LENGTH_SHORT).show();
+            }
         });
 
         SharePhoto photo = new SharePhoto.Builder()
@@ -264,7 +269,6 @@ public class MainActivity extends AppCompatActivity {
 
         shareDialog.show(content);
     }
-
 
     void shareImageInstagram(Bitmap bitmap) {
         Intent intent = getPackageManager().getLaunchIntentForPackage("com.instagram.android");
@@ -291,32 +295,39 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    void shareImageVK(Bitmap bitmap) {
+    void shareImageVK(final Bitmap bitmap) {
 
-        VKShareDialogBuilder builder = new VKShareDialogBuilder();
-        builder.setText("ko ko ko header");
-        builder.setAttachmentImages(new VKUploadImage[]{
-                new VKUploadImage(bitmap, VKImageParameters.jpgImage(0.9f))
-        });
-        builder.setAttachmentLink("ko ko ko link",
-                "https://vk.com/dev/android_sdk");
-        builder.setShareDialogListener(new VKShareDialog.VKShareDialogListener() {
-            @Override
-            public void onVkShareComplete(int postId) {
-                Toast.makeText(MainActivity.this, "VK success", Toast.LENGTH_SHORT).show();
-            }
+        if (PreferenceManagerUtils.isLoginVk(getApplicationContext())) {
+            if(bitmap != null) {
 
-            @Override
-            public void onVkShareCancel() {
-                Toast.makeText(MainActivity.this, "VK Cancel", Toast.LENGTH_SHORT).show();
-            }
+                VKShareDialogBuilder builder = new VKShareDialogBuilder();
+                builder.setText("ko ko ko header");
+                builder.setAttachmentImages(new VKUploadImage[]{
+                        new VKUploadImage(bitmap, VKImageParameters.jpgImage(0.9f))
+                });
+                builder.setAttachmentLink("ko ko ko link",
+                        "https://vk.com/dev/android_sdk");
+                builder.setShareDialogListener(new VKShareDialog.VKShareDialogListener() {
+                    @Override
+                    public void onVkShareComplete(int postId) {
+                        Toast.makeText(MainActivity.this, "Successfully posted in Vk", Toast.LENGTH_SHORT).show();
+                    }
 
-            @Override
-            public void onVkShareError(VKError error) {
-                Toast.makeText(MainActivity.this, "VK Error", Toast.LENGTH_SHORT).show();
+                    @Override
+                    public void onVkShareCancel() {
+                    }
+
+                    @Override
+                    public void onVkShareError(VKError error) {
+                        Toast.makeText(MainActivity.this, "An error occurred while processing your request", Toast.LENGTH_SHORT).show();
+                    }
+                });
+                builder.show(fragmentManager, "VK_SHARE_DIALOG");
             }
-        });
-        builder.show(fragmentManager, "VK_SHARE_DIALOG");
+        }
+        else{
+            VKSdk.login(this, VKScope.WALL, VKScope.PHOTOS, VKScope.OFFLINE);
+        }
     }
 
     @Override
@@ -324,17 +335,18 @@ public class MainActivity extends AppCompatActivity {
         if (!VKSdk.onActivityResult(requestCode, resultCode, data, new VKCallback<VKAccessToken>() {
             @Override
             public void onResult(VKAccessToken res) {
+                PreferenceManagerUtils.setLoginVk(MainActivity.this, true);
                 Toast.makeText(MainActivity.this, "Authorization successful", Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onError(VKError error) {
                 Toast.makeText(MainActivity.this, "Authorization failed", Toast.LENGTH_SHORT).show();
+                PreferenceManagerUtils.setLoginVk(MainActivity.this, false);
             }
         })) {
             super.onActivityResult(requestCode, resultCode, data);
         }
     }
-
 
 }
